@@ -1,32 +1,37 @@
 import os
 from PIL import Image
+import math
 
-image_folder = 'photo'  # создадите папку под этим названием и закиньте туда фото
-output_image = 'collage.jpg'
-collage_width = 1000  # ширина фото
-collage_height = 1000  # длина фото
-thumbnail_size = 100  # размер фото в коллаже (оно будет в виде квадрата к примеру 100x100)
-thumbnails_per_row = collage_width // thumbnail_size
-thumbnails_per_column = collage_height // thumbnail_size
-collage = Image.new('RGB', (collage_width, collage_height))
+image_folder = 'images' # папка с фото
+output_image = 'collage.png' # как будет называться файл отпут
+image_dimension = 400 # масштаб фото (к примеру тут стоит 400x400)
+border_width = 1 
+block_dimension = image_dimension + 2 * border_width
 image_files = [f for f in os.listdir(image_folder) if os.path.isfile(os.path.join(image_folder, f))]
-image_files = image_files[:1000]  # максимум фото задаётся здесь
-x, y = 0, 0
+num_images = len(image_files)
 
-for idx, image_file in enumerate(image_files):
-    img_path = os.path.join(image_folder, image_file)
-    try:
-        img = Image.open(img_path)
-        img.thumbnail((thumbnail_size, thumbnail_size))
-        collage.paste(img, (x, y))
-        x += thumbnail_size
-        if x >= collage_width:
-            x = 0
-            y += thumbnail_size
-        if idx >= 999:  # тут нужно просто от максимального количество фото отнять 1
-            break
-    except Exception as e:
-        print(f"ошибка с файлом {img_path}: {e}")
-
-collage.save(output_image)
-print(f"коллаж успешно сохранён как {output_image}")
+if num_images == 0:
+    print("нет изображений для создания коллажа")
+else:
+    side_count = math.ceil(math.sqrt(num_images))
+    collage_dimension = side_count * block_dimension
+    collage = Image.new('RGB', (collage_dimension, collage_dimension))
+    x, y = 0, 0
+    for image_file in image_files:
+        img_path = os.path.join(image_folder, image_file)
+        try:
+            img = Image.open(img_path)
+            img = img.convert('RGBA')
+            img = img.convert('RGB')
+            img = img.resize((image_dimension, image_dimension), Image.LANCZOS)
+            bordered_img = Image.new('RGB', (block_dimension, block_dimension), color='white')
+            bordered_img.paste(img, (border_width, border_width))
+            collage.paste(bordered_img, (x, y))
+            x += block_dimension
+            if x >= collage_dimension:
+                x = 0
+                y += block_dimension
+        except Exception as e:
+            print(f"ошибка с файлом {img_path}: {e}")
+    collage.save(output_image)
+    print(f"коллаж успешно сохранён как {output_image}")
